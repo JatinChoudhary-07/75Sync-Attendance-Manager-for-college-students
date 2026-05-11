@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>75Sync Pro - Attendance Intelligence</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050505">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Elegant SaaS Typography */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+        
+        :root {
+            /* Neutral Midnight Gradient */
+            --bg-base: radial-gradient(circle at top right, #1a1a1a, #050505);
+            /* Increased Material Opacity for Mobile Clarity */
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --text-main: #f8fafc;
+            --text-sub: rgba(248, 250, 252, 0.5);
+            --nav-bg: rgba(10, 10, 10, 0.95);
+            
+            /* Dynamic Variables - Deeper Shadow spread for mobile pop */
+            --accent: #94a3b8; 
+            --accent-glow: rgba(148, 163, 184, 0.35);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-weight: 400;
+        }
+
+        /* High-Intensity Atmospheric Layering */
+        .bg-texture {
+            position: fixed;
+            inset: 0;
+            background-image: url('https://images.unsplash.com/photo-1764366795867-a0e7fcbf791e?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.25; 
+            pointer-events: none;
+            z-index: -2;
+        }
+
+        .blob {
+            position: fixed;
+            width: 600px; height: 600px; border-radius: 50%;
+            filter: blur(120px); opacity: 0.15; pointer-events: none;
+            z-index: -1; transition: background 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .blob-2 { bottom: -10%; right: -10%; background: #475569; }
+
+        /* Amplified Liquid Glass Physics */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .glass:hover { 
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 30px 60px -12px var(--accent-glow);
+        }
+
+        /* Navigation Command Bar */
+        .nav-command-bar {
+            position: fixed;
+            top: 1.5rem; left: 50%; transform: translateX(-50%);
+            width: fit-content; min-width: 380px; height: 4.2rem;
+            z-index: 1000; display: flex; align-items: center; gap: 1.5rem;
+            padding: 0 1.5rem; background: var(--nav-bg);
+            border: 1px solid var(--glass-border); border-radius: 999px;
+            backdrop-filter: blur(40px); box-shadow: 0 15px 50px -10px rgba(0,0,0,0.7);
+        }
+
+        .label-caps { text-transform: uppercase; letter-spacing: 0.2em; font-size: 10px; font-weight: 600; color: var(--text-sub); }
+        .header-main { letter-spacing: -0.02em; font-weight: 500; }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1), stroke 1s ease;
+            transform: rotate(-90deg); transform-origin: 50% 50%;
+        }
+
+        .safety-line {
+            position: absolute; top: 0; left: 75%; width: 1px; height: 100%;
+            background: #ef4444; opacity: 0.4; z-index: 10;
+        }
+
+        .btn-attendance { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 0.75rem; font-weight: 700; }
+        .btn-attendance:active { transform: scale(0.9); }
+
+        /* Dynamic Percentage Highlights */
+        #overall-perc {
+            transition: color 1s ease, text-shadow 1s ease;
+        }
+
+        .btn-active-p { background: #10b981 !important; color: white !important; border: none !important; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.5); }
+        .btn-active-a { background: #f43f5e !important; color: white !important; border: none !important; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.5); }
+
+        /* Modal Logic Fixes */
+        #profile-modal, #confirm-modal { 
+            transition: opacity 0.4s ease, visibility 0.4s; 
+            z-index: 2000; 
+        }
+        .modal-hidden { opacity: 0; visibility: hidden; display: flex !important; }
+
+        @keyframes pulse-active-period {
+            0% { border-color: var(--glass-border); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+            50% { border-color: var(--accent); box-shadow: 0 0 25px -5px var(--accent-glow); background: rgba(255,255,255,0.1); }
+            100% { border-color: var(--glass-border); box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+        }
+        .pulse-active { animation: pulse-active-period 2.5s infinite ease-in-out; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .sync-spinning { animation: spin 1s linear infinite; }
+
+        .animate-reveal { animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes reveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+    </style>
+</head>
+<body class="pt-32 pb-20"> <!-- Increased pt-32 for better gap between navbar and dashboard -->
+
+    <div class="bg-texture"></div>
+    <div class="blob blob-2"></div>
+
+    <!-- Centered Command Bar Navigation -->
+    <nav class="nav-command-bar">
+        <div class="flex items-center gap-3 pl-2">
+            <span class="text-2xl font-semibold tracking-tighter text-white">75 <span class="opacity-40 ml-1">Sync</span></span>
+            <div id="heartbeat-indicator" class="w-1.5 h-1.5 rounded-full bg-slate-500 shadow-[0_0_12px_var(--accent)]"></div>
+        </div>
+
+        <div class="h-6 w-px bg-white/10"></div>
+
+        <div class="flex items-center gap-4 px-2">
+            <button onclick="navigateDate(-1)" class="opacity-40 hover:opacity-100 transition-all active:scale-75"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m15 18-6-6 6-6"/></svg></button>
+            <div class="flex flex-col items-center">
+                <!-- Day Display re-integrated here -->
+                <span id="nav-day" class="text-[8px] font-bold uppercase tracking-[0.15em] opacity-40 leading-none mb-1">Loading</span>
+                <input type="date" id="date-picker" onchange="changeDate()" class="bg-transparent text-[11px] font-bold outline-none text-center w-24 cursor-pointer hover:text-white transition-colors text-white">
+            </div>
+            <button onclick="navigateDate(1)" class="opacity-40 hover:opacity-100 transition-all active:scale-75"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+
+        <div class="h-6 w-px bg-white/10"></div>
+
+        <div class="flex items-center gap-2 pr-1">
+            <button onclick="toggleProfileModal()" class="active:scale-90 transition-transform">
+                <div id="nav-avatar" class="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shadow-inner">
+                    <!-- Dynamic avatar injected here -->
+                </div>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Profile Modal Overlay -->
+    <div id="profile-modal" class="fixed inset-0 modal-hidden items-center justify-center p-6 bg-black/85 backdrop-blur-md">
+        <div class="glass w-full max-w-lg p-8 relative animate-reveal">
+            <button onclick="toggleProfileModal()" class="absolute top-6 right-6 text-white/20 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass p-6 flex flex-col items-center text-center space-y-4 border-none bg-white/5">
+                    <div id="modal-avatar" class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10 overflow-hidden shadow-inner">
+                        <!-- Dynamic avatar injected here -->
+                    </div>
+                    <div>
+                        <h3 id="modal-name" class="text-lg font-medium tracking-tight text-white">Operator</h3>
+                        <div class="flex items-center justify-center gap-2 mt-1">
+                            <div id="sync-breadcrumb" class="flex items-center gap-1.5 opacity-60">
+                                <svg id="sync-icon" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+                                <span id="sync-time" class="text-[9px] font-bold uppercase tracking-widest">Verified</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="link-status-badge" class="px-3 py-1 rounded-full bg-white/10 text-[9px] font-bold uppercase tracking-widest text-white">Matrix Agent</div>
+                </div>
+
+                <div class="glass p-6 space-y-4 border-none bg-white/5">
+                    <div class="space-y-1">
+                        <label class="label-caps opacity-30">Username</label>
+                        <input type="text" id="username-input" class="w-full bg-black/40 border border-white/10 px-3 py-2 rounded-xl text-xs outline-none focus:border-white/20 text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="roll-input" placeholder="Roll" class="w-full bg-black/40 border border-white/10 px-3 py-2 rounded-xl text-xs outline-none text-white">
+                        <input type="text" id="branch-input" placeholder="Branch" class="w-full bg-black/40 border border-white/10 px-3 py-2 rounded-xl text-xs outline-none text-white">
+                    </div>
+                    <button onclick="saveProfile()" class="w-full py-2.5 bg-white text-black rounded-xl text-[10px] uppercase font-bold tracking-widest active:scale-95 transition-all">Verify Meta</button>
+                </div>
+
+                <div class="glass p-6 flex flex-col justify-between border-none bg-white/5">
+                    <span class="label-caps">Identity Fusion</span>
+                    <button id="auth-action-btn" onclick="handleGoogleAuth()" class="w-full py-3 bg-white/5 text-white border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 mt-4 active:scale-95 hover:bg-white/10 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+                        <span>Authorize</span>
+                    </button>
+                </div>
+
+                <div class="glass p-6 flex flex-col justify-between border-none bg-white/5">
+                    <span class="label-caps">Secure Logout</span>
+                    <button id="signout-btn" onclick="triggerConfirm('signout')" class="hidden w-full py-3 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-bold uppercase tracking-widest mt-4 active:scale-95 transition-colors">Purge Session</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 modal-hidden items-center justify-center p-6 bg-black/90 backdrop-blur-xl">
+        <div class="glass w-full max-sm p-8 text-center animate-reveal">
+            <div class="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold mb-2 text-white">Confirm Action</h3>
+            <p id="confirm-text" class="text-sm text-sub mb-8">Are you sure you want to perform this restricted operation?</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirm()" class="flex-1 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/10 transition-all text-white">Cancel</button>
+                <button id="confirm-execute" class="flex-1 py-3 bg-rose-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-rose-500/30">Execute</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-6 space-y-16 animate-reveal">
+        <!-- Hero Summary -->
+        <section>
+            <div class="glass p-12 flex flex-col md:flex-row items-center gap-16">
+                <div class="relative flex items-center justify-center scale-110">
+                    <svg class="w-44 h-44">
+                        <circle class="opacity-15 stroke-current text-white" stroke-width="10" fill="transparent" r="75" cx="88" cy="88"/>
+                        <circle id="overall-ring" class="progress-ring__circle" stroke-width="10" stroke-dasharray="471.2" stroke-dashoffset="471.2" stroke-linecap="round" fill="transparent" r="75" cx="88" cy="88"/>
+                    </svg>
+                    <div class="absolute text-center">
+                        <span id="overall-perc" class="text-5xl font-black tracking-tighter header-main">0%</span>
+                        <span id="status-label" class="label-caps block opacity-40 mt-1">Matrix</span>
+                    </div>
+                </div>
+                
+                <div class="flex-1 space-y-10 text-center md:text-left">
+                    <div>
+                        <h2 class="text-4xl font-bold header-main mb-3 text-white">Academic standing</h2>
+                        <p class="text-base text-sub font-light max-w-md">Attendance monitoring protocol for SATI Semester II.</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-8">
+                        <div class="space-y-1">
+                            <span class="label-caps">Attended</span>
+                            <span id="global-p" class="text-2xl font-bold block opacity-90 text-white">0</span>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="label-caps">Absent</span>
+                            <span id="global-a" class="text-2xl font-bold block opacity-90 text-white">0</span>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="label-caps">Remaining</span>
+                            <span id="countdown" class="text-2xl font-bold block opacity-40 text-white">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Grid -->
+        <section class="space-y-8">
+            <div class="flex items-center gap-6 px-2">
+                <span class="label-caps opacity-30">Forecast Intelligence Matrix</span>
+                <div class="h-px flex-1 bg-white/10"></div>
+            </div>
+            <div id="stats-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+        </section>
+
+        <!-- Agenda -->
+        <section class="glass p-12 space-y-12">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-white/10 pb-10">
+                <div>
+                    <h3 class="text-3xl font-bold header-main tracking-tighter text-white">Daily Agenda</h3>
+                    <p id="agenda-date" class="text-sm text-sub mt-2"></p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="markFullDay('present')" class="glass px-6 py-2.5 text-[10px] uppercase font-bold tracking-widest hover:bg-emerald-500/20 hover:text-emerald-400 transition-all btn-attendance text-white">Mark All P</button>
+                    <button onclick="markFullDay('absent')" class="glass px-6 py-2.5 text-[10px] uppercase font-bold tracking-widest hover:bg-rose-500/20 hover:text-rose-400 transition-all btn-attendance text-white">Mark All A</button>
+                </div>
+            </div>
+            <div id="agenda-container" class="space-y-4"></div>
+            <div id="holiday-view" class="hidden py-20 text-center">
+                <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-20"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+                </div>
+                <h4 class="header-main opacity-80 text-2xl text-white font-bold">System Idle</h4>
+                <p class="text-base text-sub font-light max-w-sm mx-auto mt-4 leading-relaxed">No programmed lectures found for this date in the SATI registry.</p>
+            </div>
+        </section>
+
+        <footer class="text-center py-20 opacity-10">
+            <p class="label-caps tracking-[0.6em] text-[11px]">75Sync • Professional Grade Architecture</p>
+            <button onclick="triggerConfirm('reset')" class="text-[10px] uppercase font-bold tracking-widest mt-8 hover:text-rose-500 transition-colors">Emergency State Purge</button>
+        </footer>
+    </main>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 px-10 py-4 glass rounded-full shadow-2xl transition-all transform translate-y-32 opacity-0 z-[200] border-none bg-slate-900">
+        <span id="toast-msg" class="label-caps text-white">Sync Verified</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuic6RcAEl_Ek5JtTOBWiRtMIeq_A0K1o",
+            authDomain: "attendance-manager-d03e1.firebaseapp.com",
+            projectId: "attendance-manager-d03e1",
+            storageBucket: "attendance-manager-d03e1.firebasestorage.app",
+            messagingSenderId: "120272284124",
+            appId: "1:120272284124:web:3903f86edadf734d800719"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = "75Sync-Pro";
+        const teachingEnd = new Date("2026-04-24");
+
+        const timetable = {
+            "Monday": [{time:"10:30-12:30",code:"CSA 103",lab:true},{time:"14:30-15:30",code:"CSA 103",lab:false},{time:"15:30-16:30",code:"CHB 101",lab:false},{time:"16:30-17:30",code:"CSA 104",lab:false}],
+            "Tuesday": [{time:"10:30-12:30",code:"ITC 101",lab:true},{time:"14:30-15:30",code:"CSA 103",lab:false},{time:"15:30-16:30",code:"MAB 102",lab:false},{time:"16:30-17:30",code:"CHB 101",lab:false}],
+            "Wednesday": [{time:"10:30-12:30",code:"CSL 110",lab:true},{time:"14:30-15:30",code:"MAB 102",lab:false},{time:"15:30-16:30",code:"ITC 101",lab:false},{time:"16:30-17:30",code:"CSA 104",lab:false}],
+            "Thursday": [{time:"10:30-12:30",code:"CHB 101",lab:true},{time:"14:30-15:30",code:"MAB 102",lab:false},{time:"15:30-16:30",code:"CHB 101",lab:false},{time:"16:30-17:30",code:"CSA 103",lab:false}],
+            "Friday": [{time:"10:30-12:30",code:"Internship",lab:false},{time:"14:30-15:30",code:"CSA 104",lab:false},{time:"15:30-16:30",code:"MAB 102",lab:false},{time:"16:30-17:30",code:"ITC 101",lab:false}]
+        };
+
+        const validKeys = ["CHB 101", "CHB 101 Lab", "MAB 102", "CSA 103", "CSA 103 Lab", "CSA 104", "ITC 101", "ITC 101 Lab", "CSL 110 Lab", "Internship"];
+
+        let user = null, history = {}, profile = {}, unsubH = null, unsubP = null;
+        let curDate = new Date().toISOString().split('T')[0];
+
+        async function sync(newData) {
+            if (!user) return;
+            const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'history');
+            updateBreadcrumb(true);
+            try { await setDoc(ref, { content: newData }, { merge: true }); } 
+            catch (e) { console.error(e); updateBreadcrumb(false, "Sync Error"); }
+        }
+
+        function updateBreadcrumb(isSyncing, errorMsg = null) {
+            const icon = document.getElementById('sync-icon');
+            const text = document.getElementById('sync-time');
+            if(!icon || !text) return;
+            if(isSyncing) {
+                icon.innerHTML = '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>';
+                icon.classList.add('sync-spinning');
+                text.textContent = "Syncing...";
+            } else if (errorMsg) {
+                icon.innerHTML = '<path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>';
+                icon.classList.remove('sync-spinning');
+                text.textContent = errorMsg;
+            } else {
+                icon.innerHTML = '<path d="M20 6L9 17l-5-5"/>';
+                icon.classList.remove('sync-spinning');
+                text.textContent = `Verified ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+            }
+        }
+
+        async function init() {
+            onAuthStateChanged(auth, async (u) => {
+                if (unsubH) unsubH(); if (unsubP) unsubP();
+                if (u) {
+                    user = u;
+                    setupHistorySync();
+                    setupProfileSync();
+                } else {
+                    purge(); await signInAnonymously(auth);
+                }
+            });
+            const dp = document.getElementById('date-picker');
+            if(dp) dp.value = curDate;
+            updateUI();
+        }
+
+        function purge() {
+            if (unsubH) unsubH(); if (unsubP) unsubP();
+            history = {}; profile = {}; user = null;
+            updateUI(); updateProfileUI();
+        }
+
+        function setupHistorySync() {
+            if (!user) return;
+            const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'history');
+            unsubH = onSnapshot(ref, (s) => {
+                history = s.exists() ? s.data().content || {} : {};
+                updateBreadcrumb(false);
+                updateUI();
+            });
+        }
+
+        function setupProfileSync() {
+            if (!user) return;
+            const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'profile');
+            unsubP = onSnapshot(ref, (s) => {
+                profile = s.exists() ? s.data() || {} : {};
+                syncFormFields();
+                updateProfileUI();
+            });
+        }
+
+        function syncFormFields() {
+            const fields = {'username-input': 'username', 'roll-input': 'roll', 'branch-input': 'branch'};
+            Object.entries(fields).forEach(([id, key]) => {
+                const el = document.getElementById(id);
+                if (el && !el.matches(':focus')) el.value = profile[key] || "";
+            });
+        }
+
+        window.saveProfile = async () => {
+            if (!user) return;
+            const data = {
+                username: document.getElementById('username-input').value,
+                roll: document.getElementById('roll-input').value,
+                branch: document.getElementById('branch-input').value
+            };
+            const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'profile');
+            try { await setDoc(ref, data, { merge: true }); triggerToast("Meta verified"); } catch (e) { triggerToast("Sync Failure"); }
+        };
+
+        function updateUI() {
+            const d = new Date(curDate);
+            const nd = document.getElementById('nav-day');
+            if (nd) nd.textContent = d.toLocaleDateString('en-US', { weekday: 'long' });
+
+            const stats = calcStats();
+            applyDynamicTheme(stats.global);
+            renderStats(stats.subjectStats);
+            renderAgenda(d.toLocaleDateString('en-US', { weekday: 'long' }));
+        }
+
+        function applyDynamicTheme(global) {
+            const t = global.p + global.a; 
+            const perc = t === 0 ? 0 : Math.round((global.p / t) * 100);
+            const isDanger = perc < 75 && t > 0;
+            const color = isDanger ? '#f43f5e' : t > 0 ? '#10b981' : '#94a3b8';
+            const shadow = isDanger ? 'rgba(244, 63, 94, 0.6)' : t > 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(148, 163, 184, 0.3)';
+
+            document.documentElement.style.setProperty('--accent', color);
+            document.documentElement.style.setProperty('--accent-glow', shadow);
+
+            const op = document.getElementById('overall-perc');
+            if (op) {
+                op.textContent = `${perc}%`;
+                op.style.color = color;
+                // High intensity glow for mobile presence
+                op.style.textShadow = t > 0 ? `0 0 25px ${shadow}` : 'none';
+            }
+            
+            const heart = document.getElementById('heartbeat-indicator');
+            if (heart) heart.style.backgroundColor = color;
+
+            const ring = document.getElementById('overall-ring');
+            if (ring) { 
+                const circ = 471.2; 
+                ring.style.strokeDashoffset = circ - (perc / 100 * circ); 
+                ring.style.stroke = color;
+                ring.style.filter = `drop-shadow(0 0 10px ${shadow})`;
+            }
+
+            document.getElementById('global-p').textContent = global.p;
+            document.getElementById('global-a').textContent = global.a;
+            
+            const cd = document.getElementById('countdown');
+            if (cd) {
+                const diff = Math.ceil((teachingEnd - new Date()) / (1000 * 60 * 60 * 24));
+                cd.textContent = diff > 0 ? diff : '0';
+            }
+            
+            const sl = document.getElementById('status-label');
+            if (sl) sl.textContent = isDanger ? "Warning" : t > 0 ? "Qualified" : "Matrix";
+        }
+
+        function calcStats() {
+            let s = {}; validKeys.forEach(k => s[k] = { p: 0, a: 0, logs: [] });
+            let gp = 0, ga = 0;
+            const sortedDates = Object.keys(history).sort((a,b) => new Date(b) - new Date(a));
+            Object.entries(history).forEach(([dateStr, entries]) => {
+                const sched = timetable[new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long' })] || [];
+                Object.entries(entries).forEach(([idx, status]) => {
+                    const slot = sched[idx]; if (!slot) return;
+                    const key = slot.lab ? `${slot.code} Lab` : slot.code;
+                    if (s[key]) { if (status === 'present') { s[key].p++; gp++; } else { s[key].a++; ga++; } }
+                });
+            });
+            validKeys.forEach(key => {
+                let logs = [];
+                sortedDates.forEach(d => {
+                    const dayName = new Date(d).toLocaleDateString('en-US', { weekday: 'long' });
+                    const dayData = history[d] || {};
+                    (timetable[dayName] || []).forEach((slot, idx) => {
+                        if((slot.lab ? `${slot.code} Lab` : slot.code) === key && dayData[idx]) logs.push({ date: d, status: dayData[idx] });
+                    });
+                });
+                s[key].logs = logs.slice(0, 5);
+            });
+            return { subjectStats: s, global: { p: gp, a: ga } };
+        }
+
+        function renderStats(stats) {
+            const grid = document.getElementById('stats-grid'); if (!grid) return; grid.innerHTML = '';
+            validKeys.forEach(key => {
+                const s = stats[key], t = s.p + s.a, p = t === 0 ? 0 : Math.round((s.p / t) * 100);
+                const forecast = getForecast(s.p, s.a);
+                const isDanger = p < 75 && t > 0;
+                const accentColor = isDanger ? '#f43f5e' : p > 0 ? '#10b981' : '#94a3b8';
+                const canMiss = t === 0 ? 0 : Math.floor((s.p / 0.75) - t);
+                
+                const card = document.createElement('div');
+                card.className = "glass p-8 flex flex-col justify-between min-h-[180px] animate-reveal cursor-pointer";
+                card.id = `card-${key.replace(/ /g, '-')}`;
+                card.onclick = () => {
+                    const el = document.getElementById(`logs-${key.replace(/ /g, '-')}`);
+                    if(el) el.classList.toggle('hidden');
+                };
+                card.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div><span class="label-caps block mb-1">${key.includes('Lab') ? 'Lab' : 'Theory'}</span><h4 class="text-sm font-bold tracking-tight opacity-70 text-white">${key}</h4></div>
+                            <div class="text-right">
+                                <span class="text-2xl font-black tracking-tighter block" style="color: ${accentColor}">${p}%</span>
+                                <span class="text-[9px] font-bold uppercase tracking-widest opacity-40">${canMiss > 0 ? canMiss + ' Missable' : '0 Missable'}</span>
+                            </div>
+                        </div>
+                        <div class="relative w-full h-1 bg-current opacity-10 rounded-full overflow-hidden">
+                            <div class="h-full transition-all duration-1000" style="width: ${p}%; background: ${accentColor}"></div>
+                            <div class="safety-line"></div>
+                        </div>
+                        <div id="logs-${key.replace(/ /g, '-')}" class="hidden pt-4 mt-4 border-t border-white/5 space-y-2 max-h-32 overflow-y-auto custom-scrollbar">
+                            ${s.logs.length > 0 ? s.logs.map(l => `<div class="flex justify-between items-center text-[10px] font-bold"><span class="opacity-30">${new Date(l.date).toLocaleDateString('en-US', {month:'short', day:'numeric'})}</span><span class="${l.status === 'present' ? 'text-emerald-500' : 'text-rose-500'} uppercase">${l.status}</span></div>`).join('') : '<p class="text-[10px] opacity-20 text-center py-2">No history logs</p>'}
+                        </div>
+                    </div>
+                    <div class="space-y-3 mt-6">
+                        <p class="text-[10px] font-bold tracking-tight ${forecast.type === 'danger' ? 'text-rose-400' : forecast.type === 'safe' ? 'text-emerald-400' : 'opacity-40'}">${forecast.text}</p>
+                        <div class="flex justify-between label-caps opacity-30"><span>P: ${s.p}</span><span>A: ${s.a}</span></div>
+                    </div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function getForecast(p, a) {
+            const t = p + a; if (t === 0) return { text: "Mark data to see forecast", type: "info" };
+            const perc = (p / t) * 100;
+            if (perc < 75) { const n = Math.ceil((0.75 * t - p) / 0.25); return { text: `Attend next ${n} classes`, type: "danger" }; }
+            else { const c = Math.floor((p - 0.75 * t) / 0.75); return { text: c > 0 ? `Safe to miss ${c} classes` : "Attendance edge", type: "safe" }; }
+        }
+
+        function renderAgenda(day) {
+            const cont = document.getElementById('agenda-container'), hol = document.getElementById('holiday-view');
+            const slots = timetable[day] || []; if (!cont || !hol) return; cont.innerHTML = '';
+            if (slots.length === 0) { cont.classList.add('hidden'); hol.classList.remove('hidden'); return; }
+            cont.classList.remove('hidden'); hol.classList.add('hidden');
+            const now = new Date(); const curM = now.getHours() * 60 + now.getMinutes();
+            const data = history[curDate] || {};
+            slots.forEach((slot, idx) => {
+                const status = data[idx];
+                const [st, en] = slot.time.split('-');
+                const [sH, sM] = st.split(':').map(Number); const [eH, eM] = en.split(':').map(Number);
+                const isActive = curM >= (sH*60+sM) && curM <= (eH*60+eM);
+                const div = document.createElement('div');
+                div.className = `glass p-6 flex flex-col sm:flex-row items-center justify-between gap-6 transition-all ${status ? 'opacity-40 grayscale-[0.2]' : ''} ${isActive ? 'pulse-active' : ''}`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-6 w-full">
+                        <div class="flex-1"><h5 class="font-bold text-sm tracking-tight opacity-90 text-white">${slot.code} ${slot.lab ? '(Lab)' : ''}</h5><p class="label-caps opacity-40">${slot.time} ${isActive ? '• Active Period' : ''}</p></div>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="p-${idx}" class="flex-1 sm:flex-none px-8 py-2 glass border-none bg-white/10 text-[10px] uppercase font-bold btn-attendance ${status === 'present' ? 'btn-active-p' : 'hover:bg-white/10 text-white'}">P</button>
+                        <button id="a-${idx}" class="flex-1 sm:flex-none px-8 py-2 glass border-none bg-white/10 text-[10px] uppercase font-bold btn-attendance ${status === 'absent' ? 'btn-active-a' : 'hover:bg-white/10 text-white'}">A</button>
+                    </div>`;
+                const mark = (s) => { if(navigator.vibrate) navigator.vibrate(50); commit(idx, s); };
+                div.querySelector(`#p-${idx}`).onclick = () => mark('present');
+                div.querySelector(`#a-${idx}`).onclick = () => mark('absent');
+                cont.appendChild(div);
+            });
+        }
+
+        async function commit(idx, status) {
+            const updated = { ...history };
+            if (!updated[curDate]) updated[curDate] = {};
+            if (updated[curDate][idx] === status) delete updated[curDate][idx];
+            else updated[curDate][idx] = status;
+            await sync(updated);
+        }
+
+        window.markFullDay = async (status) => {
+            if(navigator.vibrate) navigator.vibrate(80);
+            const sched = timetable[new Date(curDate).toLocaleDateString('en-US', { weekday: 'long' })] || [];
+            const updated = { ...history }; if (!updated[curDate]) updated[curDate] = {};
+            sched.forEach((_, i) => updated[curDate][i] = status);
+            await sync(updated);
+        };
+
+        // UI ACTIONS - Corrected toggle logic
+        window.toggleProfileModal = () => {
+            const modal = document.getElementById('profile-modal');
+            if (modal) {
+                modal.classList.toggle('modal-hidden');
+            }
+        };
+
+        window.handleGoogleAuth = async () => {
+            const provider = new GoogleAuthProvider();
+            const hb = document.getElementById('heartbeat-indicator');
+            try {
+                const authorized = ['127.0.0.1', 'localhost', 'attendance-manager-d03e1.web.app', 'attendance-manager-d03e1.firebaseapp.com'];
+                if (!authorized.includes(window.location.hostname) && !window.location.hostname.endsWith('.goog')) {
+                    triggerToast("AUTH FAILURE: Unauthorized Domain"); return;
+                }
+                if (auth.currentUser && auth.currentUser.isAnonymous) {
+                    try { await linkWithPopup(auth.currentUser, provider); triggerToast("MATRIX LINKED"); if (Object.keys(history).length > 0) await sync(history); } 
+                    catch (e) { if (e.code === 'auth/credential-already-in-use') { triggerToast("Sign-In Active"); await signInWithPopup(auth, provider); } else throw e; }
+                } else { await signInWithPopup(auth, provider); triggerToast("WELCOME OPERATOR"); }
+                toggleProfileModal();
+            } catch (e) { triggerToast("AUTH FAILURE"); }
+        };
+
+        window.triggerConfirm = (t) => {
+            const m = document.getElementById('confirm-modal');
+            const txt = document.getElementById('confirm-text');
+            const ex = document.getElementById('confirm-execute');
+            if(t === 'reset') { txt.textContent = "Are you sure you want to purge local identity? This will wipe all session variables."; ex.onclick = resetCloudData; } 
+            else { txt.textContent = "Confirm end of Matrix session? All cloud listeners will be detached."; ex.onclick = handleSignOut; }
+            m.classList.remove('modal-hidden');
+        };
+        window.closeConfirm = () => document.getElementById('confirm-modal').classList.add('modal-hidden');
+        window.handleSignOut = async () => { purge(); await signOut(auth); toggleProfileModal(); closeConfirm(); };
+        window.navigateDate = (s) => { let d = new Date(curDate); d.setDate(d.getDate() + s); curDate = d.toISOString().split('T')[0]; const dp = document.getElementById('date-picker'); if(dp) dp.value = curDate; updateUI(); };
+        window.changeDate = () => { const dp = document.getElementById('date-picker'); if(dp) { curDate = dp.value; updateUI(); } };
+        window.resetCloudData = async () => { history = {}; updateUI(); closeConfirm(); };
+
+        function updateProfileUI() {
+            if (!user) return;
+            const na = document.getElementById('nav-avatar'); const mn = document.getElementById('modal-name');
+            const me = document.getElementById('modal-email'); const sa = document.getElementById('signout-btn');
+            const ab = document.getElementById('auth-action-btn'); const lb = document.getElementById('link-status-badge');
+            const ma = document.getElementById('modal-avatar');
+            
+            // DYNAMIC AVATAR LOGIC: Use photoURL or generate one from DiceBear using the UID
+            const avatarUrl = user.photoURL || `https://api.dicebear.com/9.x/micah/svg?seed=${user.uid}`;
+            const photo = `<img src="${avatarUrl}" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}'">`;
+            
+            if (na) na.innerHTML = photo; 
+            if (ma) ma.innerHTML = photo;
+            
+            if (mn) mn.textContent = profile.username || (user.isAnonymous ? "Guest Identity" : user.displayName);
+            if (user.isAnonymous) { 
+                if (sa) sa.classList.add('hidden'); 
+                if (ab) ab.classList.remove('hidden'); 
+                if (lb) lb.textContent = "Guest Mode"; 
+                if (me) me.textContent = "Fusion Pending"; 
+            } 
+            else { 
+                if (me) me.textContent = user.email; 
+                if (ab) ab.classList.add('hidden'); 
+                if (sa) sa.classList.remove('hidden'); 
+                if (lb) lb.textContent = "Verified Account"; 
+            }
+        }
+
+        function triggerToast(msg) { const t = document.getElementById('toast'), m = document.getElementById('toast-msg'); if (t && m) { m.textContent = msg; t.classList.remove('translate-y-32', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-32', 'opacity-0'), 2000); } }
+
+        window.init = init;
+        init();
+    </script>
+</body>
+</html>

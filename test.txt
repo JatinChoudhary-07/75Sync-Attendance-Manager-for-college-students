@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>75Sync - Professional Attendance Intel</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#020617">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Elegant Typography: Plus Jakarta Sans */
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+        
+        :root {
+            --bg-liquid: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            --card-glass: rgba(255, 255, 255, 0.4);
+            --border-glass: rgba(0, 0, 0, 0.04);
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent: #6366f1;
+        }
+
+        .dark {
+            --bg-liquid: radial-gradient(circle at top right, #0f172a, #020617);
+            --card-glass: rgba(15, 23, 42, 0.5);
+            --border-glass: rgba(255, 255, 255, 0.04);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #818cf8;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-liquid);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.6s ease;
+            overflow-x: hidden;
+            font-weight: 400;
+        }
+
+        .glass {
+            background: var(--card-glass);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            border: 1px solid var(--border-glass);
+            box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.02);
+        }
+
+        .glass-darker {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        .btn-active-p { 
+            background: #10b981 !important; 
+            color: white !important; 
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15); 
+        }
+        .btn-active-a { 
+            background: #ef4444 !important; 
+            color: white !important; 
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15); 
+        }
+
+        .animate-fade-up {
+            animation: elegantFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes elegantFade {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bubble { position: fixed; z-index: -1; border-radius: 50%; filter: blur(120px); opacity: 0.15; pointer-events: none; }
+        
+        #profile-modal {
+            transition: opacity 0.3s ease, visibility 0.3s;
+        }
+        #profile-modal.hidden {
+            opacity: 0;
+            visibility: hidden;
+            display: flex !important;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.3; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <div class="bubble w-[600px] h-[600px] bg-indigo-500 top-[-20%] left-[-10%]"></div>
+    <div class="bubble w-[500px] h-[500px] bg-blue-400 bottom-0 right-[-5%]"></div>
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-[100] glass border-b border-white/5 px-6 h-16 flex items-center mb-12">
+        <div class="max-w-5xl mx-auto w-full flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="text-lg font-medium tracking-tight">75<span class="text-indigo-500 font-medium">Sync</span></span>
+                <div class="h-3 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+                <p id="sync-status" class="text-[10px] font-medium opacity-40 uppercase tracking-widest flex items-center gap-1.5">
+                    Connecting
+                </p>
+            </div>
+            
+            <div class="flex items-center gap-5">
+                <button onclick="toggleTheme()" class="opacity-60 hover:opacity-100 p-1.5 rounded-lg transition-all">
+                    <svg id="sun-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+                <div class="flex items-center gap-3 opacity-60 hover:opacity-100 transition-opacity">
+                    <button onclick="navigateDate(-1)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
+                    <div class="flex flex-col items-center">
+                        <span id="nav-day" class="text-[9px] font-medium text-indigo-500 uppercase tracking-widest leading-none mb-1">Monday</span>
+                        <input type="date" id="date-picker" onchange="changeDate()" class="bg-transparent text-[10px] font-medium outline-none text-center w-24 leading-none">
+                    </div>
+                    <button onclick="navigateDate(1)"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>
+                </div>
+                <button onclick="toggleProfileModal()" class="ml-2 transition-transform hover:scale-105 active:scale-95">
+                    <div id="nav-avatar" class="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center overflow-hidden border border-indigo-100 dark:border-indigo-800">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Profile Modal Overlay -->
+    <div id="profile-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-6 bg-slate-900/10 backdrop-blur-sm">
+        <div class="glass w-full max-w-sm rounded-[2rem] p-8 animate-fade-up relative">
+            <button onclick="toggleProfileModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+            
+            <div class="flex flex-col items-center text-center space-y-6">
+                <div id="modal-avatar" class="w-20 h-20 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center border border-indigo-100 dark:border-indigo-800 overflow-hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-300"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                
+                <div>
+                    <h3 id="modal-name" class="text-xl font-medium tracking-tight">Guest User</h3>
+                    <p id="modal-email" class="text-xs text-slate-400 font-medium mt-1">Anonymous Matrix</p>
+                </div>
+
+                <div class="w-full pt-4 space-y-3">
+                    <button id="auth-action-btn" onclick="handleGoogleAuth()" class="w-full py-3.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-[10px] font-medium uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2 active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-500"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+                        <span>Link Account</span>
+                    </button>
+                    <button id="signout-btn" onclick="handleSignOut()" class="hidden w-full py-3.5 rounded-xl text-rose-500 text-[10px] font-medium uppercase tracking-widest hover:bg-rose-100 transition-all active:scale-95">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-6 space-y-12">
+        <!-- Academic Pulse Hero -->
+        <section class="animate-fade-up">
+            <div class="glass rounded-[2rem] p-10 lg:p-12 flex flex-col lg:flex-row items-center gap-12">
+                <div class="relative flex items-center justify-center">
+                    <svg class="w-40 h-40">
+                        <circle class="opacity-5 stroke-current text-slate-400" stroke-width="8" fill="transparent" r="75" cx="80" cy="80"/>
+                        <circle id="overall-ring" class="progress-ring__circle text-indigo-500" stroke-width="8" stroke-dasharray="471.2" stroke-dashoffset="471.2" stroke-linecap="round" fill="transparent" r="75" cx="80" cy="80"/>
+                    </svg>
+                    <div class="absolute text-center">
+                        <span id="overall-perc" class="text-4xl font-medium tracking-tighter">0%</span>
+                        <span class="text-[9px] font-medium opacity-30 uppercase tracking-widest block">Average</span>
+                    </div>
+                </div>
+                
+                <div class="flex-1 text-center lg:text-left space-y-8">
+                    <div>
+                        <h2 class="text-3xl font-medium tracking-tight mb-2">Academic Pulse</h2>
+                        <p class="text-sm opacity-40 font-light italic">Refining semester performance at SATI.</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-6">
+                        <div class="glass-darker p-5 rounded-2xl text-center">
+                            <span class="block text-[9px] font-medium opacity-30 uppercase tracking-widest mb-1">Attended</span>
+                            <span id="global-p" class="text-xl font-medium text-emerald-500/80">0</span>
+                        </div>
+                        <div class="glass-darker p-5 rounded-2xl text-center">
+                            <span class="block text-[9px] font-medium opacity-30 uppercase tracking-widest mb-1">Absent</span>
+                            <span id="global-a" class="text-xl font-medium text-rose-500/80">0</span>
+                        </div>
+                        <div class="glass-darker p-5 rounded-2xl text-center">
+                            <span class="block text-[9px] font-medium opacity-30 uppercase tracking-widest mb-1">Days Left</span>
+                            <span id="countdown" class="text-xl font-medium text-indigo-500/80">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Grid -->
+        <section class="animate-fade-up" style="animation-delay: 0.1s">
+            <div class="flex items-center gap-6 mb-8 px-2">
+                <h3 class="text-[10px] font-medium opacity-30 uppercase tracking-[0.4em] whitespace-nowrap">Forecast Intelligence</h3>
+                <div class="h-px w-full bg-black/5 dark:bg-white/5"></div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="stats-grid"></div>
+        </section>
+
+        <!-- Daily Agenda -->
+        <section class="animate-fade-up" style="animation-delay: 0.2s">
+            <div class="glass rounded-[2rem] p-10 space-y-10">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-black/5 dark:border-white/5 pb-8">
+                    <div>
+                        <h3 id="agenda-title" class="text-2xl font-medium tracking-tight">Daily Schedule</h3>
+                        <p id="agenda-date" class="text-xs opacity-40 font-medium mt-1"></p>
+                    </div>
+                    <div id="quick-actions" class="flex gap-2">
+                        <button onclick="markFullDay('present')" class="glass px-5 py-2.5 rounded-xl text-[10px] font-medium uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all active:scale-95">Attend Day</button>
+                        <button onclick="markFullDay('absent')" class="glass px-5 py-2.5 rounded-xl text-[10px] font-medium uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all active:scale-95">Mark Leave</button>
+                    </div>
+                </div>
+                <div id="agenda-container" class="space-y-3"></div>
+                <div id="holiday-view" class="hidden py-16 text-center flex flex-col items-center">
+                    <div class="w-16 h-16 bg-indigo-500/5 rounded-[1.5rem] flex items-center justify-center mb-6 text-indigo-500/30">
+                        <svg id="holiday-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"></svg>
+                    </div>
+                    <div>
+                        <h4 id="holiday-title" class="text-xl font-medium tracking-tight opacity-80 mb-2">Campus Idle</h4>
+                        <p id="holiday-desc" class="text-xs opacity-40 max-w-[240px] font-light leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center py-20 opacity-30">
+            <p class="text-[9px] font-medium uppercase tracking-[0.8em] mb-4 italic">75Sync • Professional Attendance Matrix</p>
+            <button onclick="resetCloudData()" class="text-[10px] font-medium text-rose-500/60 hover:text-rose-500 uppercase tracking-widest px-8 py-3 rounded-xl glass active:scale-95">Reset Semester Data</button>
+        </footer>
+    </main>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 glass rounded-2xl shadow-xl transition-all transform translate-y-32 opacity-0 z-[200]">
+        <span id="toast-msg" class="text-[10px] font-medium text-indigo-500 uppercase tracking-widest">Live Sync</span>
+    </div>
+
+    <!-- Firebase Engine -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, linkWithPopup, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyDuic6RcAEl_Ek5JtTOBWiRtMIeq_A0K1o",
+            authDomain: "attendance-manager-d03e1.firebaseapp.com",
+            projectId: "attendance-manager-d03e1",
+            storageBucket: "attendance-manager-d03e1.firebasestorage.app",
+            messagingSenderId: "120272284124",
+            appId: "1:120272284124:web:3903f86edadf734d800719"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Global Expose for Debugging
+        window.auth = auth; window.db = db; window.doc = doc; window.getDoc = getDoc;
+
+        const appId = "75Sync-Pro";
+        const teachingEnd = new Date("2026-04-24");
+
+        const academicEvents = [
+            { start: "2026-02-23", end: "2026-02-27", title: "Mid-Sem Exam I", type: "exam" },
+            { start: "2026-02-28", end: "2026-03-09", title: "Holi / Mid-Sem Break", type: "holiday" },
+            { start: "2026-04-01", end: "2026-04-08", title: "Mid-Sem Exam II", type: "exam" },
+            { date: "2026-04-24", title: "Teaching Ends", type: "deadline" }
+        ];
+
+        const subjects = {
+            "CHB 101": { name: "Applied Chemistry", color: "blue" },
+            "MAB 102": { name: "Mathematics-II", color: "indigo" },
+            "CSA 103": { name: "Data Structures", color: "violet" },
+            "CSA 104": { name: "Software System", color: "emerald" },
+            "ITC 101": { name: "Python Programming", color: "orange" },
+            "CSL 110": { name: "Linux Workshop", color: "cyan" },
+            "Internship": { name: "Internship HUM", color: "rose" }
+        };
+
+        const timetable = {
+            "Monday": [{time:"10:30-12:30",code:"CSA 103",lab:true},{time:"2:30-3:30",code:"CSA 103",lab:false},{time:"3:30-4:30",code:"CHB 101",lab:false},{time:"4:30-5:30",code:"CSA 104",lab:false}],
+            "Tuesday": [{time:"10:30-12:30",code:"ITC 101",lab:true},{time:"2:30-3:30",code:"CSA 103",lab:false},{time:"3:30-4:30",code:"MAB 102",lab:false},{time:"4:30-5:30",code:"CHB 101",lab:false}],
+            "Wednesday": [{time:"10:30-12:30",code:"CSL 110",lab:true},{time:"2:30-3:30",code:"MAB 102",lab:false},{time:"3:30-4:30",code:"ITC 101",lab:false},{time:"4:30-5:30",code:"CSA 104",lab:false}],
+            "Thursday": [{time:"10:30-12:30",code:"CHB 101",lab:true},{time:"2:30-3:30",code:"MAB 102",lab:false},{time:"3:30-4:30",code:"CHB 101",lab:false},{time:"4:30-5:30",code:"CSA 103",lab:false}],
+            "Friday": [{time:"10:30-12:30",code:"Internship",lab:false},{time:"2:30-3:30",code:"CSA 104",lab:false},{time:"3:30-4:30",code:"MAB 102",lab:false},{time:"4:30-5:30",code:"ITC 101",lab:false}]
+        };
+
+        const validStatsKeys = ["CHB 101", "CHB 101 Lab", "MAB 102", "CSA 103", "CSA 103 Lab", "CSA 104", "ITC 101", "ITC 101 Lab", "CSL 110 Lab", "Internship"];
+
+        let user = null;
+        let history = {};
+        let currentSelectedDate = new Date().toISOString().split('T')[0];
+        let unsubscribe = null;
+
+        // AUTH ENGINE
+        async function startApp() {
+            onAuthStateChanged(auth, async (u) => {
+                user = u;
+                if (user) {
+                    document.getElementById('sync-status').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live Cloud`;
+                    setupFirestore();
+                    updateProfileUI();
+                } else {
+                    await signInAnonymously(auth);
+                }
+            });
+
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+            updateThemeIcons();
+            document.getElementById('date-picker').value = currentSelectedDate;
+            updateUI();
+        }
+
+        function setupFirestore() {
+            if (!user) return;
+            if (unsubscribe) unsubscribe();
+            const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'history');
+            unsubscribe = onSnapshot(ref, (snap) => {
+                history = snap.exists() ? snap.data().content || {} : {};
+                updateUI();
+            }, (err) => console.error("Cloud Snap Error:", err));
+        }
+
+        async function sync(newData) {
+            if (!user) return;
+            const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'history');
+            try { await setDoc(ref, { content: newData }); triggerToast("Sync Verified"); } catch (e) { console.error(e); }
+        }
+
+        // RENDER CORE
+        function updateUI() {
+            const d = new Date(currentSelectedDate);
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+            document.getElementById('nav-day').textContent = dayName;
+            document.getElementById('agenda-date').textContent = d.toLocaleDateString('en-US', { dateStyle: 'full' });
+
+            const stats = calcStats();
+            renderHero(stats.global);
+            renderStats(stats.subjectStats);
+            renderAgenda(dayName);
+        }
+
+        function calcStats() {
+            let s = {}; validStatsKeys.forEach(k => s[k] = { p: 0, a: 0 });
+            let gp = 0, ga = 0;
+            Object.entries(history).forEach(([dateStr, entries]) => {
+                const day = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long' });
+                const sched = timetable[day] || [];
+                Object.entries(entries).forEach(([idx, status]) => {
+                    const slot = sched[idx]; if (!slot) return;
+                    const key = slot.lab ? `${slot.code} Lab` : slot.code;
+                    if (s[key]) { if (status === 'present') { s[key].p++; gp++; } else if (status === 'absent') { s[key].a++; ga++; } }
+                });
+            });
+            return { subjectStats: s, global: { p: gp, a: ga } };
+        }
+
+        function renderHero(global) {
+            const t = global.p + global.a; const perc = t === 0 ? 0 : Math.round((global.p / t) * 100);
+            document.getElementById('overall-perc').textContent = `${perc}%`;
+            document.getElementById('global-p').textContent = global.p;
+            document.getElementById('global-a').textContent = global.a;
+            const ring = document.getElementById('overall-ring');
+            if (ring) { const circ = 471.2; ring.style.strokeDashoffset = circ - (perc / 100 * circ); ring.classList.toggle('text-rose-500', perc < 75 && t > 0); }
+            const diff = Math.ceil((teachingEnd - new Date()) / (1000 * 60 * 60 * 24));
+            document.getElementById('countdown').textContent = diff > 0 ? diff : '0';
+        }
+
+        function renderStats(stats) {
+            const grid = document.getElementById('stats-grid'); if (!grid) return; grid.innerHTML = '';
+            validStatsKeys.forEach(key => {
+                const s = stats[key]; const t = s.p + s.a; const p = t === 0 ? 0 : Math.round((s.p / t) * 100);
+                const forecast = getForecast(s.p, s.a);
+                const card = document.createElement('div');
+                card.className = "glass p-7 rounded-[2rem] flex flex-col justify-between hover:border-indigo-500/10 transition-all animate-fade-up";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-6">
+                            <div><span class="text-[10px] font-medium opacity-30 uppercase tracking-widest block">${key.includes('Lab') ? 'Lab' : 'Theory'}</span><h4 class="text-sm font-medium tracking-tight">${key}</h4></div>
+                            <span class="text-2xl font-medium tracking-tighter ${p < 75 && t > 0 ? 'text-rose-500/80' : ''}">${p}%</span>
+                        </div>
+                        <div class="relative w-full h-1 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden mb-6">
+                            <div class="h-full bg-${subjects[key.replace(' Lab', '')]?.color || 'slate'}-500 transition-all duration-1000" style="width: ${p}%"></div>
+                            <div class="absolute top-0 left-[75%] w-[1.5px] h-full bg-rose-500/40 z-10"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <p class="text-[11px] font-light italic tracking-tight ${forecast.type === 'danger' ? 'text-rose-400' : forecast.type === 'safe' ? 'text-emerald-500' : 'opacity-40'}">${forecast.text}</p>
+                        <div class="flex justify-between text-[10px] font-normal opacity-20 uppercase tracking-widest"><span>P: ${s.p}</span><span>A: ${s.a}</span></div>
+                    </div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function getForecast(p, a) {
+            const t = p + a; if (t === 0) return { text: "Mark data to see forecast", type: "info" };
+            const perc = (p / t) * 100;
+            if (perc < 75) { const n = Math.ceil((0.75 * t - p) / 0.25); return { text: `Attend next ${n} classes`, type: "danger" }; }
+            else { const c = Math.floor((p - 0.75 * t) / 0.75); return { text: c > 0 ? `Safe to miss ${c} classes` : "Edge reached", type: "safe" }; }
+        }
+
+        function renderAgenda(dayName) {
+            const container = document.getElementById('agenda-container'); const holidayView = document.getElementById('holiday-view'); const quickActions = document.getElementById('quick-actions');
+            const event = academicEvents.find(e => e.date === currentSelectedDate || (e.start <= currentSelectedDate && e.end >= currentSelectedDate));
+            const slots = timetable[dayName] || []; container.innerHTML = '';
+            if (event || slots.length === 0) {
+                container.classList.add('hidden'); quickActions.classList.add('hidden'); holidayView.classList.remove('hidden');
+                const icon = document.getElementById('holiday-icon');
+                if (event) {
+                    document.getElementById('holiday-title').textContent = event.title;
+                    document.getElementById('holiday-desc').textContent = event.type === 'holiday' ? "Campus operations suspended for the semester break." : "Academic examinations in progress.";
+                    icon.innerHTML = event.type === 'holiday' ? '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>' : '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/>';
+                } else {
+                    document.getElementById('holiday-title').textContent = "Rest Cycle"; document.getElementById('holiday-desc').textContent = "No lectures scheduled for this date. Check lab journals.";
+                    icon.innerHTML = '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>';
+                }
+                return;
+            }
+            container.classList.remove('hidden'); quickActions.classList.remove('hidden'); holidayView.classList.add('hidden');
+            const dayData = history[currentSelectedDate] || {};
+            slots.forEach((slot, idx) => {
+                const status = dayData[idx]; const color = subjects[slot.code].color;
+                const div = document.createElement('div');
+                div.className = `glass p-6 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-10 transition-all ${status ? 'opacity-40 grayscale-[0.2]' : 'hover:border-indigo-500/10'}`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-6 w-full">
+                        <div class="w-12 h-12 rounded-[1rem] bg-${color}-500/10 text-${color}-500 flex items-center justify-center font-medium text-xs">${slot.code.split(' ')[0]}</div>
+                        <div><h5 class="font-medium text-sm tracking-tight opacity-90">${slot.code} ${slot.lab ? '(Lab)' : ''}</h5><p class="text-[10px] font-normal opacity-30 uppercase tracking-widest">${slot.time}</p></div>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="p-${idx}" class="flex-1 sm:flex-none px-7 py-3 rounded-xl border border-black/5 dark:border-white/5 text-[10px] font-medium transition-all active:scale-95 ${status === 'present' ? 'btn-active-p' : 'hover:bg-emerald-500/5'}">P</button>
+                        <button id="a-${idx}" class="flex-1 sm:flex-none px-7 py-3 rounded-xl border border-black/5 dark:border-white/5 text-[10px] font-medium transition-all active:scale-95 ${status === 'absent' ? 'btn-active-a' : 'hover:bg-rose-500/5'}">A</button>
+                    </div>`;
+                div.querySelector(`#p-${idx}`).onclick = () => commit(idx, 'present');
+                div.querySelector(`#a-${idx}`).onclick = () => commit(idx, 'absent');
+                container.appendChild(div);
+            });
+        }
+
+        // ACTIONS
+        async function commit(idx, status) {
+            if (!user) return; const updated = { ...history };
+            if (!updated[currentSelectedDate]) updated[currentSelectedDate] = {};
+            if (updated[currentSelectedDate][idx] === status) delete updated[currentSelectedDate][idx];
+            else updated[currentSelectedDate][idx] = status;
+            await sync(updated);
+        }
+
+        async function markFullDay(status) {
+            if (!user) return; const day = new Date(currentSelectedDate).toLocaleDateString('en-US', { weekday: 'long' });
+            const slots = timetable[day] || []; const updated = { ...history };
+            if (!updated[currentSelectedDate]) updated[currentSelectedDate] = {};
+            slots.forEach((_, i) => updated[currentSelectedDate][i] = status);
+            await sync(updated);
+        }
+
+        // PROFILE ENGINE
+        window.toggleProfileModal = () => document.getElementById('profile-modal').classList.toggle('hidden');
+        window.handleGoogleAuth = async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                if (user && user.isAnonymous) { await linkWithPopup(auth.currentUser, provider); triggerToast("Matrix Linked"); }
+                else { await signInWithPopup(auth, provider); triggerToast("Cloud Signed"); }
+                toggleProfileModal();
+            } catch (e) { 
+                console.error(e); 
+                if (e.code === 'auth/unauthorized-domain') {
+                    triggerToast("Add domain to Firebase Console");
+                } else {
+                    triggerToast("Auth Error"); 
+                }
+            }
+        };
+        window.handleSignOut = async () => { try { await signOut(auth); triggerToast("Sign Out"); toggleProfileModal(); } catch (e) { console.error(e); } };
+        function updateProfileUI() {
+            const na = document.getElementById('nav-avatar'); const ma = document.getElementById('modal-avatar');
+            if (!user) return;
+            if (user.isAnonymous) {
+                na.innerHTML = ma.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+                document.getElementById('modal-name').textContent = "Guest User";
+                document.getElementById('signout-btn').classList.add('hidden');
+                document.getElementById('auth-action-btn').classList.remove('hidden');
+            } else {
+                na.innerHTML = `<img src="${user.photoURL}" class="w-full h-full object-cover">`;
+                ma.innerHTML = `<img src="${user.photoURL}" class="w-full h-full object-cover scale-150">`;
+                document.getElementById('modal-name').textContent = user.displayName;
+                document.getElementById('modal-email').textContent = user.email;
+                document.getElementById('auth-action-btn').classList.add('hidden');
+                document.getElementById('signout-btn').classList.remove('hidden');
+            }
+        }
+
+        // UTILS
+        window.navigateDate = (step) => { let d = new Date(currentSelectedDate); d.setDate(d.getDate() + step); currentSelectedDate = d.toISOString().split('T')[0]; document.getElementById('date-picker').value = currentSelectedDate; updateUI(); };
+        window.changeDate = () => { currentSelectedDate = document.getElementById('date-picker').value; updateUI(); };
+        window.toggleTheme = () => { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', isDark ? 'dark' : 'light'); updateThemeIcons(); };
+        function updateThemeIcons() { const isDark = document.documentElement.classList.contains('dark'); document.getElementById('sun-icon').classList.toggle('hidden', !isDark); document.getElementById('moon-icon').classList.toggle('hidden', isDark); }
+        window.resetCloudData = async () => { if(confirm("Permanently wipe all cloud data?")) await sync({}); };
+        window.markFullDay = markFullDay;
+        function triggerToast(msg) { const t = document.getElementById('toast'); const m = document.getElementById('toast-msg'); if (t && m) { m.textContent = msg; t.classList.remove('translate-y-32', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-32', 'opacity-0'), 2000); } }
+
+        // SW REGISTRATION
+        if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+            navigator.serviceWorker.register('sw.js').then(() => console.log('SW Active')).catch(e => console.warn('SW Skip:', e.message));
+        }
+
+        startApp();
+    </script>
+</body>
+</html>

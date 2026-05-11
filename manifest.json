@@ -1,0 +1,16 @@
+
+{
+  "name": "75Sync Professional Attendance Matrix",
+  "short_name": "75Sync",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3208/3208753.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
